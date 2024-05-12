@@ -20,49 +20,52 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#ifndef EULERISTIC_UNIQUE_KEY_HPP
+#define EULERISTIC_UNIQUE_KEY_HPP
 
 #include <functional>
+#include <utility>
+#include <concepts>
 
 namespace euleristic {
 
 	template <typename...Args> void NoOp([[maybe_unused]]Args&&...args) { /*Empty*/ }
 
 	template <typename Type, Type nullValue = static_cast<Type>(0), bool COPYABLE = true>
-	class RAIIWrapper {
+	class UniqueKey {
 	public:
-		RAIIWrapper() : value(nullValue), copier(std::identity{}), deleter(NoOp<Type>) {}
+		UniqueKey() : value(nullValue), copier(std::identity{}), deleter(NoOp<Type>) {}
 
-		RAIIWrapper(const Type value, std::function<Type(Type)> copier, std::function<void(Type)> deleter) :
+		UniqueKey(const Type value, std::function<Type(Type)> copier, std::function<void(Type)> deleter) :
 			value(value), copier(copier), deleter(deleter) {}
 
-		RAIIWrapper(const std::function<Type()> initializer, std::function<Type(Type)> copier, std::function<void(Type)> deleter) :
+		UniqueKey(const std::function<Type()> initializer, std::function<Type(Type)> copier, std::function<void(Type)> deleter) :
 			value(initializer()), copier(copier), deleter(deleter) {}
 
-		~RAIIWrapper() {
+		~UniqueKey() {
 			deleter(value);
 		}
 
-		RAIIWrapper(const RAIIWrapper& other) :
+		UniqueKey(const UniqueKey& other) :
 			value(other.copier(other.value)), copier(other.copier), deleter(other.deleter) {}
 
-		RAIIWrapper& operator=(const RAIIWrapper& other) {
+		UniqueKey& operator=(const UniqueKey& other) {
 			swap(*this, other);
 			return *this;
 		}
 
-		RAIIWrapper(RAIIWrapper&& other) noexcept :
+		UniqueKey(UniqueKey&& other) noexcept :
 			value(std::exchange(other.value, nullValue)),
 			copier(std::exchange(other.copier, std::identity{})), deleter(std::exchange(other.deleter, NoOp<Type>)) {}
 
-		RAIIWrapper& operator=(RAIIWrapper&& other) noexcept {
+		UniqueKey& operator=(UniqueKey&& other) noexcept {
 			value = std::exchange(other.value, nullValue);
 			copier = std::exchange(other.copier, std::identity{});
 			deleter = std::exchange(other.deleter, NoOp<Type>);
 			return *this;
 		}
 
-		void friend swap(RAIIWrapper& lhs, RAIIWrapper& rhs) noexcept {
+		void friend swap(UniqueKey& lhs, UniqueKey& rhs) noexcept {
 
 			using std::swap;
 
@@ -71,7 +74,7 @@ namespace euleristic {
 			swap(lhs.deleter, rhs.deleter);
 		}
 
-		RAIIWrapper& operator=(const Type newValue) {
+		UniqueKey& operator=(const Type newValue) {
 			deleter(value);
 			value = newValue;
 			return *this;
@@ -81,11 +84,11 @@ namespace euleristic {
 			return value != nullValue;
 		}
 
-		[[no_discard]] Type operator*() const {
+		[[nodiscard]] Type operator*() const {
 			return value;
 		}
 
-		[[no_discard]] Type Get() const {
+		[[nodiscard]] Type Get() const {
 			return value;
 		}
 
@@ -96,41 +99,41 @@ namespace euleristic {
 	};
 
 	template <typename Type, Type nullValue>
-	class RAIIWrapper<Type, nullValue, false> {
+	class UniqueKey<Type, nullValue, false> {
 	public:
 
-		RAIIWrapper() : value(nullValue), deleter(NoOp<Type>) {}
+		UniqueKey() : value(nullValue), deleter(NoOp<Type>) {}
 
-		RAIIWrapper(const Type value, std::function<void(Type)> deleter) :
+		UniqueKey(const Type value, std::function<void(Type)> deleter) :
 			value(value), deleter(deleter) {}
 
-		RAIIWrapper(const std::function<Type()> initializer, std::function<void(Type)> deleter) :
+		UniqueKey(const std::function<Type()> initializer, std::function<void(Type)> deleter) :
 			value(initializer()), deleter(deleter) {}
 
-		~RAIIWrapper() {
+		~UniqueKey() {
 			deleter(value);
 		}
 
-		RAIIWrapper(const RAIIWrapper&) = delete;
-		RAIIWrapper& operator=(const RAIIWrapper&) = delete;
+		UniqueKey(const UniqueKey&) = delete;
+		UniqueKey& operator=(const UniqueKey&) = delete;
 
-		RAIIWrapper(RAIIWrapper&& other) noexcept :
+		UniqueKey(UniqueKey&& other) noexcept :
 			value(std::exchange(other.value, nullValue)),
 			deleter(std::exchange(other.deleter, NoOp<Type>)) {}
 
-		RAIIWrapper& operator=(RAIIWrapper&& other) noexcept {
+		UniqueKey& operator=(UniqueKey&& other) noexcept {
 			value = std::exchange(other.value, nullValue);
 			deleter = std::exchange(other.deleter, NoOp<Type>);
 			return *this;
 		}
 
-		void friend swap(RAIIWrapper& lhs, RAIIWrapper& rhs) noexcept {
-			RAIIWrapper temp = rhs;
+		void friend swap(UniqueKey& lhs, UniqueKey& rhs) noexcept {
+			UniqueKey temp = rhs;
 			rhs = lhs;
 			lhs = temp;
 		}
 
-		RAIIWrapper& operator=(const Type newValue) {
+		UniqueKey& operator=(const Type newValue) {
 			deleter(value);
 			value = newValue;
 			return *this;
@@ -153,3 +156,5 @@ namespace euleristic {
 		std::function<void(Type)> deleter;
 	};
 }
+
+#endif // !EULERISTIC_UNIQUE_KEY_HPP
