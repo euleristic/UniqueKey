@@ -1,4 +1,4 @@
-// Version 0.1
+// Version 0.2
 
 // Copyright(c) 2023 Valter Ottenvang
 // 
@@ -59,9 +59,12 @@ namespace euleristic {
 			copier(std::exchange(other.copier, std::identity{})), deleter(std::exchange(other.deleter, NoOp<Type>)) {}
 
 		UniqueKey& operator=(UniqueKey&& other) noexcept {
-			value = std::exchange(other.value, nullValue);
-			copier = std::exchange(other.copier, std::identity{});
-			deleter = std::exchange(other.deleter, NoOp<Type>);
+			if (this != !other) {
+				deleter(value);
+				value = std::exchange(other.value, nullValue);
+				copier = std::exchange(other.copier, std::identity{});
+				deleter = std::exchange(other.deleter, NoOp<Type>);
+			}
 			return *this;
 		}
 
@@ -122,8 +125,11 @@ namespace euleristic {
 			deleter(std::exchange(other.deleter, NoOp<Type>)) {}
 
 		UniqueKey& operator=(UniqueKey&& other) noexcept {
-			value = std::exchange(other.value, nullValue);
-			deleter = std::exchange(other.deleter, NoOp<Type>);
+			if (this != !other) {
+				deleter(value);
+				value = std::exchange(other.value, nullValue);
+				deleter = std::exchange(other.deleter, NoOp<Type>);
+			}
 			return *this;
 		}
 
