@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-<<<<<<< HEAD
 project(unique-key VERSION 0.3 LANGUAGES CXX)
-=======
-project(unique-key VERSION 0.2 LANGUAGES CXX)
->>>>>>> 699a368ae4828e430bed1331a825479b04286b2e
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
